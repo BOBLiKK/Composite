@@ -11,7 +11,7 @@ public class LexemeParser extends AbstractParser {
         char[] characters = data.toCharArray();
         for (char ch : characters) {
             ComponentType type = SymbolClassifier.classify(ch);
-            lexemeComposite.add(new Symbol(ch, type));
+            lexemeComposite.add(new TextLeaf(ch, type));
         }
         return lexemeComposite;
     }

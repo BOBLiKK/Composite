@@ -3,11 +3,11 @@ package ehu.java.composite.impl;
 import ehu.java.composite.TextComponent;
 import java.util.List;
 
-public class Symbol implements TextComponent {
+public class TextLeaf implements TextComponent {
     private final char symbol;
     private final ComponentType type;
 
-    public Symbol(char symbol, ComponentType type) {
+    public TextLeaf(char symbol, ComponentType type) {
         this.symbol = symbol;
         this.type = type;
     }
@@ -24,7 +24,7 @@ public class Symbol implements TextComponent {
 
     @Override
     public List<TextComponent> getChild() {
-        return List.of();
+        throw new UnsupportedOperationException("Cannot get the child of a leaf");
     }
 
     @Override

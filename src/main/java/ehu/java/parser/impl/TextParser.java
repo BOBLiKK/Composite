@@ -4,7 +4,7 @@ import ehu.java.composite.TextComponent;
 import ehu.java.composite.impl.*;
 
 public class TextParser extends AbstractParser {
-    private static final String PARAGRAPH_DELIMITER = "(\\t| {4})+";
+    private static final String PARAGRAPH_DELIMITER = "\\n(\\t| {4})";
 
     @Override
     public TextComponent parse(String data) {
