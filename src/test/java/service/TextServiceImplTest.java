@@ -1,7 +1,6 @@
 package service;
 
 import ehu.java.composite.TextComponent;
-import ehu.java.composite.impl.TextComposite;
 import ehu.java.parser.Parser;
 import ehu.java.parser.impl.ParserBuilder;
 import ehu.java.service.TextService;
@@ -18,8 +17,6 @@ public class TextServiceImplTest {
     private String sampleText;
     private TextComponent parsedText;
 
-
-
     //todo names
 
     @BeforeEach
@@ -34,28 +31,68 @@ public class TextServiceImplTest {
         parsedText = parser.parse(sampleText);
     }
 
+
+
     @Test
     void sortParagraphsBySentenceCount_shouldSortCorrectly() {
-        List<TextComponent> sortedParagraphs = textService.sortParagraphsBySentenceCount(parsedText);
-        assertEquals(3, sortedParagraphs.size());
-        assertTrue(sortedParagraphs.get(0).toString().contains("Bye."));
-        assertTrue(sortedParagraphs.get(2).toString().contains("It is a truth"));
+        String originalText = """
+            Hello world again. First paragraph. Still. First. Paragraph.
+                
+            Second Paragraph.
+                
+            This is the third paragraph. It contains more words and has multiple sentences and hello.
+        """;
+
+        Parser parser = ParserBuilder.buildParserChain();
+        TextComponent parsedText = parser.parse(originalText);
+        List<TextComponent> sorted = textService.sortParagraphsBySentenceCount(parsedText);
+
+        List<String> expectedParagraphs = List.of(
+                "Second Paragraph.",
+                "This is the third paragraph. It contains more words and has multiple sentences and hello.",
+                "Hello world again. First paragraph. Still. First. Paragraph."
+        );
+
+        for (int i = 0; i < expectedParagraphs.size(); i++) {
+            String actual = sorted.get(i).toString().strip();
+            String expected = expectedParagraphs.get(i).strip();
+            assertEquals(expected, actual, "Paragraph on position  " + i + " doesn't match");
+        }
     }
+
+
 
     @Test
     void findSentencesWithLongestWord_shouldFindCorrectSentences() {
-        List<TextComponent> result = textService.findSentencesWithLongestWord(parsedText);
+        String result = textService.findSentencesWithLongestWord(parsedText);
         assertFalse(result.isEmpty());
-        assertTrue(result.get(0).toString().contains("universally")); // longest word
+        assertTrue(result.toString().contains("universally"));
     }
 
     @Test
     void removeSentencesWithWordCountLessThan_shouldRemoveShortSentences() {
-        int minWords = 4;
-        TextComponent result = textService.removeSentencesWithWordCountLessThan(parsedText, minWords);
-        String restored = result.toString();
-        assertFalse(restored.contains("Bye."));
-        assertTrue(restored.contains("A quick brown fox"));
+        String originalText = """
+        Hello world again. First paragraph. Still. First. Paragraph.
+            
+        Second Paragraph.
+            
+        This is the third paragraph. It contains more words and has multiple sentences and hello.
+    """;
+
+        String expectedText = """
+        Hello world again.
+        This is the third paragraph. It contains more words and has multiple sentences and hello.
+    """;
+
+        Parser parser = ParserBuilder.buildParserChain();
+        int threshold = 3;
+        TextComponent parsedText = parser.parse(originalText);
+        TextComponent filteredText = textService.removeSentencesWithWordCountLessThan(parsedText, threshold);
+
+        assertEquals(
+                expectedText.strip().replaceAll("\\s+", " "),
+                filteredText.toString().strip().replaceAll("\\s+", " ")
+        );
     }
 
         @Test
@@ -67,11 +104,19 @@ public class TextServiceImplTest {
         }
 
     @Test
-    void countVowelsAndConsonantsInSentence_shouldReturnCorrectCounts() {
-        TextComponent sentence = ((TextComposite) parsedText.getChild().get(0))
-                .getChild().get(0); // First sentence of first paragraph
-        Map<String, Integer> counts = textService.countVowelsAndConsonants(sentence);
-        assertEquals(22, counts.get("vowels")); // exact numbers may differ
-        assertEquals(43, counts.get("consonants"));
+    void countVowelsAndConsonants_shouldCountCorrectly() {
+        String text = """
+            Hello world!
+            Привет мир.
+        """;
+
+        TextComponent parsed = parser.parse(text);
+        Map<String, Integer> result = textService.countVowelsAndConsonants(parsed);
+
+        int expectedVowels = 6;
+        int expectedConsonants = 13;
+
+        assertEquals(expectedVowels, result.get("vowels"), "Incorrect vowel count");
+        assertEquals(expectedConsonants, result.get("consonants"), "Incorrect consonant count");
     }
 }

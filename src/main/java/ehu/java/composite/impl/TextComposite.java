@@ -3,7 +3,6 @@
     import ehu.java.composite.TextComponent;
     import java.util.ArrayList;
     import java.util.List;
-    import java.util.StringJoiner;
 
     public class TextComposite implements TextComponent {
         private final ComponentType type;
@@ -57,5 +56,14 @@
             }
 
             return builder.toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            TextComposite that = (TextComposite) o;
+            return type == that.type &&
+                    components.equals(that.components);
         }
     }

@@ -1,7 +1,6 @@
 package ehu.java.composite;
 
 import ehu.java.composite.impl.ComponentType;
-
 import java.util.List;
 
 public interface TextComponent {

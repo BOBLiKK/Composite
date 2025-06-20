@@ -2,14 +2,17 @@ package ehu.java.service.impl;
 
 import ehu.java.composite.TextComponent;
 import ehu.java.composite.impl.ComponentType;
+import ehu.java.composite.impl.TextComposite;
 import ehu.java.service.TextService;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class TextServiceImpl implements TextService {
 
-    //todo names
+    private static final Logger logger = LogManager.getLogger(TextServiceImpl.class);
 
     private static final Set<Character> VOWELS = Set.of(
             'A', 'E', 'I', 'O', 'U', 'Y',
@@ -27,37 +30,57 @@ public class TextServiceImpl implements TextService {
     }
 
     @Override
-    public List<TextComponent> findSentencesWithLongestWord(TextComponent text) {
-        int maxLength = text.getChild().stream()
-                .flatMap(p -> p.getChild().stream()) // sentences
-                .flatMap(s -> s.getChild().stream()) // lexemes
-                .flatMap(l -> l.getChild().stream()) // words/symbols
-                .filter(c -> c.getType() == ComponentType.WORD)
-                .mapToInt(w -> w.toString().length())
-                .max().orElse(0);
+    public String findSentencesWithLongestWord(TextComponent text) {
+        if (text.getType() != ComponentType.TEXT) {
+            throw new IllegalArgumentException("Component is not a TEXT node");
+        }
 
-        return text.getChild().stream()
-                .flatMap(p -> p.getChild().stream()) // sentences
-                .filter(s -> s.toString().split("\\s+").length > 0 &&
-                        Arrays.stream(s.toString().split("\\s+"))
-                                .anyMatch(w -> w.length() == maxLength))
-                .collect(Collectors.toList());
+        List<TextComponent> result = new ArrayList<>();
+        int maxLength = 0;
+
+        for (TextComponent paragraph : text.getChild()) {
+            for (TextComponent sentence : paragraph.getChild()) {
+                int sentenceMax = sentence.getChild().stream()
+                        .mapToInt(lexeme -> lexeme.toString().length())
+                        .max()
+                        .orElse(0);
+                if (sentenceMax > maxLength) {
+                    maxLength = sentenceMax;
+                    result.clear();
+                    result.add(sentence);
+                } else if (sentenceMax == maxLength) {
+                    result.add(sentence);
+                }
+            }
+        }
+        logger.info("Sentences with longest word (length = " + maxLength + "):");
+
+        return result.toString();
     }
 
     @Override
     public TextComponent removeSentencesWithWordCountLessThan(TextComponent text, int threshold) {
-        for (TextComponent paragraph : text.getChild()) {
-            List<TextComponent> updatedSentences = paragraph.getChild().stream()
-                    .filter(sentence -> {
-                        long wordCount = Arrays.stream(sentence.toString().split("\\s+"))
-                                .filter(w -> w.matches("[\\p{L}\\p{Digit}]+"))
-                                .count();
-                        return wordCount >= threshold;
-                    }).collect(Collectors.toList());
-            paragraph.getChild().clear();
-            paragraph.getChild().addAll(updatedSentences);
+        if (text.getType() != ComponentType.TEXT) {
+            throw new IllegalArgumentException("Component is not a TEXT node");
         }
-        return text;
+
+        TextComposite resultText = new TextComposite(ComponentType.TEXT);
+
+        for (TextComponent paragraph : text.getChild()) {
+            TextComposite resultParagraph = new TextComposite(ComponentType.PARAGRAPH);
+
+            for (TextComponent sentence : paragraph.getChild()) {
+                int wordCount = sentence.getChild().size();
+                if (wordCount >= threshold) {
+                    resultParagraph.add(sentence);
+                }
+            }
+            if (!resultParagraph.getChild().isEmpty()) {
+                resultText.add(resultParagraph);
+            }
+        }
+
+        return resultText;
     }
 
     @Override
@@ -66,7 +89,7 @@ public class TextServiceImpl implements TextService {
         Pattern wordPattern = Pattern.compile("[\\p{L}\\p{Digit}]+");
 
         text.getChild().stream()
-                .flatMap(p -> p.getChild().stream()) // sentences
+                .flatMap(p -> p.getChild().stream())
                 .flatMap(s -> Arrays.stream(s.toString().split("\\s+")))
                 .map(word -> word.replaceAll("[^\\p{L}\\p{Digit}]", "").toLowerCase())
                 .filter(word -> !word.isBlank())
@@ -78,16 +101,28 @@ public class TextServiceImpl implements TextService {
     }
 
     @Override
-    public Map<String, Integer> countVowelsAndConsonants(TextComponent sentence) {
+    public Map<String, Integer> countVowelsAndConsonants(TextComponent text) {
+        if (text.getType() != ComponentType.TEXT) {
+            throw new IllegalArgumentException("Component is not a TEXT node");
+        }
+
         int vowels = 0;
         int consonants = 0;
 
-        for (char c : sentence.toString().toUpperCase().toCharArray()) {
-            if (Character.isLetter(c)) {
-                if (VOWELS.contains(c)) {
-                    vowels++;
-                } else {
-                    consonants++;
+        for (TextComponent paragraph : text.getChild()) {
+            for (TextComponent sentence : paragraph.getChild()) {
+                for (TextComponent lexeme : sentence.getChild()) {
+                    for (TextComponent symbol : lexeme.getChild()) {
+                        char ch = symbol.toString().charAt(0);
+                        if (Character.isLetter(ch)) {
+                            char upperCh = Character.toUpperCase(ch);
+                            if (VOWELS.contains(upperCh)) {
+                                vowels++;
+                            } else {
+                                consonants++;
+                            }
+                        }
+                    }
                 }
             }
         }

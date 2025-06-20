@@ -36,4 +36,13 @@ public class TextLeaf implements TextComponent {
     public String toString() {
         return String.valueOf(symbol);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TextLeaf textLeaf = (TextLeaf) o;
+        return symbol == textLeaf.symbol &&
+                type == textLeaf.type;
+    }
 }

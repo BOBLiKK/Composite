@@ -90,7 +90,7 @@ public class TextCompositeTest {
         text.add(paragraph1);
         text.add(paragraph2);
 
-        String expected = "Hello world!\nThis is.";
+        String expected = "\tHello world!\n\tThis is.";
         String actual = text.toString();
 
         assertEquals(expected, actual);
